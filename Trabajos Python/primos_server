@@ -1,0 +1,54 @@
+#!/usr/bin/env python3
+import socket
+import pickle
+import multiprocessing
+
+HOST = ''
+PORT = 2424
+
+
+def primos(inicio, final):
+    numeros_primos = list()
+    for num in range(inicio,final+1):
+        if num > 1:
+            for i in range(2,num):
+                if(num % i == 0):
+                    break
+            else:
+                numeros_primos.append(num)
+    return numeros_primos
+
+
+def main ():
+    c = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
+    c.setsockopt(socket.SOL_SOCKET, socket.SO_REUSEADDR, 1)
+    c.bind((HOST, PORT))
+    c.listen(10)
+    print("Esperando conexion en puerto %d" % PORT)
+    while True:
+        current, address = c.accept()
+        print("Conectado a %s" % address[0])
+
+        while True:
+            data = current.recv(2048)
+            if (data == "stop"):
+                current.shutdown(1)
+                current.close()
+                exit()
+                break
+            else:
+                rango = data.split(b",")
+                inicio = int(rango[0])
+                final = int(rango[1])
+                print("Procesando primos entre %d y %d" % (inicio, final))
+                lista = primos(inicio, final)
+                data = pickle.dumps(lista)
+                current.sendall(data)
+
+
+
+if __name__ == '__main__':
+    try:
+        main()
+    except KeyboardInterrupt:
+        pass
